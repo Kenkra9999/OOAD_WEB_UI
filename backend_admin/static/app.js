@@ -86,6 +86,9 @@ const ROLE_CONFIGS = {
     }
 };
 
+// Cổng đăng nhập chung (giao diện trang Khách hàng – Phân hệ 1)
+const CONG_DANG_NHAP_CHUNG = '/khach-hang/#/dang-nhap';
+
 // ----------------- KHỞI CHẠY KHI TẢI TRANG -----------------
 window.addEventListener('DOMContentLoaded', () => {
     const saved = localStorage.getItem('urban_chic_auth') || sessionStorage.getItem('urban_chic_auth');
@@ -97,6 +100,13 @@ window.addEventListener('DOMContentLoaded', () => {
             localStorage.removeItem('urban_chic_auth');
             sessionStorage.removeItem('urban_chic_auth');
         }
+    }
+
+    // Chưa đăng nhập → dùng cổng đăng nhập chung (Khách hàng + Admin / Vận hành / Thủ kho) tại /khach-hang/
+    // (thêm ?noi-bo vào URL nếu muốn dùng form đăng nhập nội bộ cũ)
+    if (!currentUser && location.protocol.startsWith('http') && !new URLSearchParams(location.search).has('noi-bo')) {
+        location.replace(CONG_DANG_NHAP_CHUNG);
+        return;
     }
 
     document.getElementById('form-login').addEventListener('submit', async (e) => {
@@ -190,6 +200,10 @@ function logout() {
     localStorage.removeItem('urban_chic_auth');
     sessionStorage.removeItem('urban_chic_auth');
     currentUser = null;
+    if (location.protocol.startsWith('http') && !new URLSearchParams(location.search).has('noi-bo')) {
+        location.href = CONG_DANG_NHAP_CHUNG;
+        return;
+    }
     document.getElementById('main-portal').classList.add('hidden');
     document.getElementById('login-view').classList.remove('hidden');
     document.getElementById('login-password').value = '';

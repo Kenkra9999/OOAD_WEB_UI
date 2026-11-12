@@ -27,7 +27,7 @@ const brandMark = (sub) => `<div class="text-center mb-7">
 V.login = (_, q) => {
   if (Session.user()) { setTimeout(() => go(q.next || '#/tai-khoan'), 0); return ''; }
   return V.authLayout(`
-    ${brandMark('Đăng nhập tài khoản khách hàng')}
+    ${brandMark('Đăng nhập tài khoản Urban Chic')}
     <div id="login-msg" class="mb-4 ${q.msg ? '' : 'hidden'}">${q.msg === 'reset' ? UI.alert('success', 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.') : q.msg === 'registered' ? UI.alert('success', 'Đăng ký thành công! Mời bạn đăng nhập để bắt đầu mua sắm.') : ''}</div>
     <form id="form-login" onsubmit="V.doLogin(event)" class="space-y-4">
       ${UI.field({ id: 'login-account', label: 'Tên đăng nhập hoặc Email', placeholder: 'Nhập tên đăng nhập hoặc email...', icon: 'fa-user', value: q.u || '', attrs: 'autocomplete="username"' })}
@@ -35,7 +35,7 @@ V.login = (_, q) => {
         <div class="flex justify-end -mb-5 relative z-10"><a href="#/quen-mat-khau" class="text-xs text-gray-500 hover:text-black font-semibold">Quên mật khẩu?</a></div>
         ${UI.field({ id: 'login-password', label: 'Mật khẩu', type: 'password', placeholder: '••••••••', icon: 'fa-lock', attrs: 'autocomplete="current-password"' })}
       </div>
-      <label class="flex items-center gap-2 text-xs text-gray-600"><input type="checkbox" checked class="accent-black"> Ghi nhớ đăng nhập</label>
+      <label class="flex items-center gap-2 text-xs text-gray-600"><input id="login-remember" type="checkbox" checked class="accent-black"> Ghi nhớ đăng nhập</label>
       <button class="w-full py-3.5 bg-black hover:bg-gray-800 text-white rounded-xl text-sm font-bold shadow-md"><i class="fa-solid fa-right-to-bracket text-xs mr-2"></i>Đăng nhập</button>
     </form>
     <div class="flex items-center gap-3 my-6 text-xs text-gray-400"><span class="h-px flex-1 bg-gray-200"></span>hoặc<span class="h-px flex-1 bg-gray-200"></span></div>
@@ -43,15 +43,29 @@ V.login = (_, q) => {
     <p class="text-center text-xs text-gray-400 mt-3"><a href="#/" class="hover:text-black">← Tiếp tục mua sắm với tư cách khách vãng lai</a></p>
   `, UI.uc('UC02', 'GiaoDienDangNhap'));
 };
-V.doLogin = (e) => {
+/* Cổng đăng nhập chung: Khách hàng → trang mua sắm; Admin / Vận hành / Thủ kho → thẳng vào hệ thống quản trị */
+V.doLogin = async (e) => {
   e.preventDefault();
-  const r = XacThucController.dangNhap($('#login-account').value, $('#login-password').value);
+  const acc = $('#login-account').value; const pw = $('#login-password').value;
   const box = $('#login-msg');
+  const show = (html) => { box.classList.remove('hidden'); box.innerHTML = html; $('#login-password').value = ''; $('#login-password').focus(); };
+  const r = XacThucController.dangNhap(acc, pw);
   if (!r.ok) {
-    box.classList.remove('hidden');
-    box.innerHTML = r.code === 'KHOA' ? UI.alert('warn', `<b>Đăng nhập bị từ chối.</b> ${r.error}`) : UI.alert('error', r.error);
-    $('#login-password').value = ''; $('#login-password').focus();
-    return;
+    if (r.code === 'KHOA') return show(UI.alert('warn', `<b>Đăng nhập bị từ chối.</b> ${r.error}`));
+    if (r.code === 'THIEU') return show(UI.alert('error', r.error));
+    // Không phải tài khoản khách hàng → thử tài khoản nhân sự nội bộ (API /api/auth/login của Admin)
+    const btn = $('#form-login button[type=submit], #form-login button:not([type])');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-xs mr-2"></i>Đang kiểm tra tài khoản...'; }
+    const st = await NhanVienAuth.dangNhap(acc, pw);
+    if (st.ok) {
+      NhanVienAuth.luuPhien(st.user, $('#login-remember')?.checked);
+      UI.toast(`Xin chào ${esc(st.user.name)} (${NhanVienAuth.vaiTro(st.user.role)}) – đang chuyển vào hệ thống quản trị…`, 'success', 2500);
+      setTimeout(() => { location.href = NhanVienAuth.portalUrl(); }, 700);
+      return;
+    }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-right-to-bracket text-xs mr-2"></i>Đăng nhập'; }
+    if (st.code === 'KHOA') return show(UI.alert('warn', `<b>Đăng nhập bị từ chối.</b> ${esc(st.error)}`));
+    return show(UI.alert('error', r.error + (st.code === 'OFFLINE' ? '<br><span class="text-xs">Tài khoản nhân viên (Admin / Vận hành / Thủ kho) chỉ đăng nhập được khi web chạy qua máy chủ FastAPI.</span>' : '')));
   }
   UI.toast(`Xin chào ${esc(r.kh.name || r.kh.username)}! Đăng nhập thành công.${r.merged ? ' Đã gộp giỏ hàng của bạn.' : ''}`);
   App.renderHeader();

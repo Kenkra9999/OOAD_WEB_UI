@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Urban Chic® - Hệ Thống Quản Trị & Vận Hành Nội Bộ</title>
+    <script>
+        // Chưa đăng nhập → chuyển ngay sang cổng đăng nhập chung (tránh nháy form cũ)
+        (function () {
+            try {
+                var daDangNhap = localStorage.getItem('urban_chic_auth') || sessionStorage.getItem('urban_chic_auth');
+                if (!daDangNhap && location.protocol.indexOf('http') === 0 && location.search.indexOf('noi-bo') < 0) location.replace('/khach-hang/#/dang-nhap');
+            } catch (e) {}
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">

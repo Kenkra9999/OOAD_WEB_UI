@@ -128,6 +128,9 @@ const App = {
         <div class="grid grid-cols-2 gap-2 text-xs">
           <button onclick="App.quickLogin('minhquan')" class="border rounded-lg py-2 font-semibold hover:border-black">Đăng nhập demo</button>
           <button onclick="App.quickLogin('vankiet')" class="border rounded-lg py-2 font-semibold hover:border-black">Điền TK bị khóa</button>
+          <button onclick="App.quickLogin('admin','admin123')" class="border rounded-lg py-2 font-semibold hover:border-black">Điền TK Admin</button>
+          <button onclick="App.quickLogin('kho','kho123')" class="border rounded-lg py-2 font-semibold hover:border-black">Điền TK Thủ kho</button>
+          <button onclick="App.quickLogin('vanhanh','vanhanh123')" class="col-span-2 border rounded-lg py-2 font-semibold hover:border-black">Điền TK NV Vận hành</button>
           <a href="#/hop-thu" class="border rounded-lg py-2 font-semibold text-center hover:border-black">Hộp thư mô phỏng</a>
           <a href="#/use-case" class="border rounded-lg py-2 font-semibold text-center hover:border-black">Danh mục UC</a>
           <button onclick="App.resetData()" class="border border-red-200 text-red-600 rounded-lg py-2 font-semibold hover:bg-red-50">Khôi phục dữ liệu</button>
@@ -138,10 +141,11 @@ const App = {
     </div>`;
   },
 
-  quickLogin(user) {
+  quickLogin(user, pw = 'Demo@123') {
     $('#demo-root').dataset.open = '0';
-    if (user === 'vankiet' || !location.hash.startsWith('#/dang-nhap')) { if (Session.user()) XacThucController.dangXuat(); go('#/dang-nhap'); }
-    setTimeout(() => { const a = $('#login-account'); const p = $('#login-password'); if (a && p) { a.value = user; p.value = 'Demo@123'; UI.toast('Đã điền tài khoản demo – nhấn Đăng nhập', 'info'); } }, 50);
+    if (Session.user()) XacThucController.dangXuat();
+    if (!location.hash.startsWith('#/dang-nhap')) go('#/dang-nhap'); else App.render();
+    setTimeout(() => { const a = $('#login-account'); const p = $('#login-password'); if (a && p) { a.value = user; p.value = pw; UI.toast('Đã điền tài khoản demo – nhấn Đăng nhập', 'info'); } }, 80);
   },
   async resetData() {
     if (!(await UI.confirm({ title: 'Khôi phục dữ liệu mẫu', message: 'Xóa mọi thay đổi (tài khoản mới, đơn hàng, giỏ hàng...) và đưa về dữ liệu mẫu ban đầu?', okLabel: 'Khôi phục', danger: true }))) return;

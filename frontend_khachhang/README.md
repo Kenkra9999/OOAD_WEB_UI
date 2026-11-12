@@ -18,6 +18,13 @@ Cũng có thể mở trực tiếp `frontend_khachhang/index.html` bằng Chrome
 
 Dữ liệu lưu trong `localStorage` của trình duyệt. Muốn quay về dữ liệu mẫu: nút **Demo** (góc dưới trái) → *Khôi phục dữ liệu*.
 
+## Cổng đăng nhập chung
+Trang `/khach-hang/#/dang-nhap` là **một form đăng nhập dùng chung** cho mọi vai trò:
+- Tài khoản **Khách hàng** (có sẵn hoặc tự đăng ký) → vào trang mua sắm.
+- Tài khoản **Admin / NV Vận hành / Thủ kho** (bảng `NGUOI_DUNG`, xác thực qua `POST /api/auth/login`) → vào thẳng trang quản trị `/` đúng vai trò.
+- Vào `/` khi chưa đăng nhập hoặc bấm Đăng xuất trong trang quản trị → quay về cổng đăng nhập chung. Form đăng nhập nội bộ cũ vẫn dùng được qua `/?noi-bo`.
+- Tên đăng nhập trùng bí danh nhân sự (`admin`, `kho`, `vanhanh`...) không được dùng để đăng ký tài khoản khách.
+
 ## Tài khoản demo (xem `assets/js/data.js`)
 | Tài khoản | Mật khẩu | Ghi chú |
 |---|---|---|

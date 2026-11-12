@@ -155,7 +155,7 @@ const TaiKhoanController = {
     if (Object.keys(e).length) return fail('Dữ liệu không hợp lệ, vui lòng kiểm tra lại.', { code: 'LOI_DU_LIEU', fields: e });
     const cs = DB.data.customers;
     const dup = {};
-    if (cs.some((c) => c.username === t.username)) dup.username = 'Tên đăng nhập đã được sử dụng.';
+    if (cs.some((c) => c.username === t.username) || NhanVienAuth.TEN_DANH_RIENG.includes(t.username)) dup.username = 'Tên đăng nhập đã được sử dụng.';
     if (cs.some((c) => c.email.toLowerCase() === t.email)) dup.email = 'Email đã được sử dụng cho tài khoản khác.';
     if (Object.keys(dup).length) return fail('Tên đăng nhập hoặc email đã tồn tại. Vui lòng nhập lại.', { code: 'DA_TON_TAI', fields: dup });
     const kh = { id: 'KH' + String(DB.next('customer')).padStart(3, '0'), username: t.username, name: '', email: t.email, phone: '', password: t.password, status: 'HOAT_DONG', gender: '', dob: '', joined: nowISO().slice(0, 10), addresses: [] };
@@ -219,6 +219,34 @@ const XacThucController = {
     const kh = DB.data.customers.find((c) => c.id === v.t.customerId);
     kh.password = mk; v.t.used = true; DB.save();
     return ok();
+  },
+};
+
+/* Cổng đăng nhập chung – tài khoản nhân sự nội bộ (Admin / NV Vận hành / Thủ kho)
+ * Xác thực qua API của phần Admin (POST /api/auth/login) và lưu phiên vào khóa
+ * 'urban_chic_auth' mà trang quản trị (backend_admin/static/app.js) đọc khi tải trang. */
+const NhanVienAuth = {
+  TEN_DANH_RIENG: ['admin', 'minhtri', 'vanhanh', 'mai', 'kho', 'thukho', 'hung'],
+  VAI_TRO: { ADMIN: 'Quản trị viên', NV_VAN_HANH: 'Nhân viên vận hành', NV_KHO: 'Thủ kho' },
+  vaiTro(r) { return this.VAI_TRO[r] || r; },
+  portalUrl() { return new URL('../', location.href).href; },
+  async dangNhap(tai, matKhau) {
+    if (!location.protocol.startsWith('http')) return fail('Không có máy chủ.', { code: 'OFFLINE' });
+    try {
+      const res = await fetch(new URL('../api/auth/login', location.href), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username_or_email: (tai || '').trim(), password: matKhau }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.user) return ok({ user: data.user });
+      if (res.status === 401 || res.status === 403) return fail(data.detail || 'Đăng nhập không thành công.', { code: res.status === 403 ? 'KHOA' : 'SAI' });
+      return fail('Không kết nối được API đăng nhập nội bộ.', { code: 'OFFLINE' });
+    } catch (e) { return fail('Không kết nối được máy chủ.', { code: 'OFFLINE' }); }
+  },
+  luuPhien(user, nhoDangNhap) {
+    const s = JSON.stringify(user);
+    localStorage.removeItem('urban_chic_auth'); sessionStorage.removeItem('urban_chic_auth');
+    (nhoDangNhap ? localStorage : sessionStorage).setItem('urban_chic_auth', s);
   },
 };
 
